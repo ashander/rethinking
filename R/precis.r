@@ -30,6 +30,7 @@ precis.plot <- function( x , y , pars , col.ci="black" , ... ) {
 setMethod( "plot" , "precis" , function(x,y,...) precis.plot(x,y,...) )
 
 precis <- function( model , pars , type.s=FALSE , ci=TRUE , level=0.95 , corr=FALSE , digits=2 , warn=TRUE ) {
+    print("warning `pars` argument only works for stanfit class currently")
     the.class <- class(model)[1]
     found.class <- FALSE
     if ( the.class=="numeric" ) {
@@ -42,9 +43,9 @@ precis <- function( model , pars , type.s=FALSE , ci=TRUE , level=0.95 , corr=FA
     if ( the.class=="list" )
         if ( class( model[[1]] ) != "mcarray" ) found.class <- FALSE
     if ( found.class==TRUE ) {
-        est <- xcoef( model )
-        se <- xse( model )
-        if ( corr==TRUE ) Rho <- xrho( model )
+        est <- xcoef( model ,pars)
+        se <- xse( model, pars)
+        if ( corr==TRUE ) Rho <- xrho( model, pars)
     }
     if ( found.class==FALSE ) {
         message( paste("No handler found for model of class",the.class) )
@@ -66,7 +67,7 @@ precis <- function( model , pars , type.s=FALSE , ci=TRUE , level=0.95 , corr=FA
         }
         if ( the.class=="stanfit" ) {
             # HPDI from samples
-            post <- as.data.frame( extract(model) )
+            post <- as.data.frame( extract(model, pars=pars) )
             ci <- t( apply( post , 2 , HPDI , prob=level ) )
         }
         result <- cbind( result , ci )
@@ -82,27 +83,43 @@ precis <- function( model , pars , type.s=FALSE , ci=TRUE , level=0.95 , corr=FA
     new( "precis" , output=result , digits=digits )
 }
 
+sfcoef <- function(m, p)
+    summary(m)[['summary']][p , 1] ## WORKS
+
+
 ####
-xcoef <- function( model ) {
+xcoef <- function( model, pars) {
+
     the.class <- class(model)[1]
     the.method <- precis.whitelist$coef.method[ precis.whitelist$class==the.class ]
+
     if ( the.method=="coef" ) {
+        ## make pars
         result <- coef(model)
     }
     if ( the.method=="fixef" ) {
+          ## make pars
         result <- fixef(model)
     }
     if ( the.method=="polr" ) {
-        result <- summary(model)$coefficients[,1]
+                  ## make pars
+        result <- summary(model)$coefficients[ ,1] 
     }
     if ( the.method=="chain" ) {
         # average of chains
+                  ## make pars
         result <- apply( model , 2 , mean )
     }
     if ( the.method=="stanfit" ) {
-        result <- summary( model )$summary[,1]
+        print(class(model))
+        print(summary(model))
+
+        result <- summary( model )[['summary']][pars , 1] ## works?!?
+        names(result) <- pars
     }
     if ( the.method=="mcarray" ) {
+        ## make pars
+        
         # jags.samples result, hopefully
         result <- NULL
         result.names <- NULL
@@ -126,6 +143,8 @@ xcoef <- function( model ) {
         names(result) <- result.names
     }
     if ( the.method=="fixef.plus" ) {
+        ## make pars
+        
         # fixef from lmer plus variance components
         result <- fixef(model)
         vc <- VarCorr(model)
@@ -168,25 +187,33 @@ xcheckconvergence <- function( model ) {
     }
 }
 
-xse <- function( model ) {
+xse <- function( model , pars) {
     the.class <- class(model)[1]
     the.method <- precis.whitelist$vcov.method[ precis.whitelist$class==the.class ]
     if ( the.method=="vcov" ) {
+           ## make pars     
         result <- sqrt(diag(vcov(model)))
     }
     if ( the.method=="vcov.VarCorr" ) {
+                ## make pars
         result <- sqrt(diag( as.matrix(vcov(model)) ))
-        num.sigma <- length( xcoef(model) ) - length( fixef(model) )
+        num.sigma <- length( xcoef(model, pars=NULL) ) - length( fixef(model) )
         result <- c( result , rep(NA,num.sigma) )
     }
     if ( the.method=="chain" ) {
+                ## make pars
+        
         # sd of chains
         result <- apply( model , 2 , sd )
     }
     if ( the.method=="stanfit" ) {
-        result <- summary( model )$summary[,3]
+                ## make pars
+        result <- summary( model )[['summary']][pars , 3] 
+        names(result) <- pars
     }
     if ( the.method=="mcarray" ) {
+        ## make pars
+        
         # jags.samples result, hopefully
         result <- NULL
         result.names <- NULL
@@ -216,21 +243,26 @@ xrho <- function( model ) {
     the.class <- class(model)[1]
     the.method <- precis.whitelist$vcov.method[ precis.whitelist$class==the.class ]
     if ( the.method=="vcov" ) {
+        ## make pars
         result <- cov2cor( vcov(model) ) 
     }
     if ( the.method=="vcov.VarCorr" ) {
+        ## make pars
         result <- sqrt(diag( as.matrix(vcov(model)) ))
         num.sigma <- length( xcoef(model) ) - length( fixef(model) )
         result <- c( result , rep(NA,num.sigma) )
     }
     if ( the.method=="chain" ) {
+        ## make pars
         # sd of chains
         result <- apply( model , 2 , sd )
     }
     if ( the.method=="stanfit" ) {
-        result <- summary( model )$summary[,3]
+        ## make pars
+        result <- summary( model )$summary[pars,3]
     }
     if ( the.method=="mcarray" ) {
+        ## make pars
         # jags.samples result, hopefully
         result <- NULL
         result.names <- NULL

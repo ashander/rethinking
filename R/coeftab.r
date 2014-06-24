@@ -61,7 +61,7 @@ coeftab.plot <- function( x , y , pars , col.ci="black" , by.model=FALSE , prob=
 }
 setMethod( "plot" , "coeftab" , function(x,y,...) coeftab.plot(x,y,...) )
 
-coeftab <- function( ... , se=FALSE , se.inside=FALSE , nobs=TRUE , digits=2 , width=7 , rotate=FALSE , compare=FALSE ) {
+coeftab <- function( ... , se=FALSE , se.inside=FALSE , nobs=TRUE , digits=2 , width=7 , rotate=FALSE , compare=FALSE, pars=NULL) {
     
     # se=TRUE outputs standard errors
     # se.inside=TRUE prints standard errors in parentheses in same column as estimates
@@ -69,49 +69,65 @@ coeftab <- function( ... , se=FALSE , se.inside=FALSE , nobs=TRUE , digits=2 , w
     if ( se.inside==TRUE ) se <- TRUE
     
     # retrieve list of models
+
+    # ISSUE - need to passing several models as list and manage row.name
+    # ISSUE - depending on load order of rethinking, rstan ( and maybe interacting with devtools) the call through to xcoef ends up calling summary.default instaed of the method for stanfit
     L <- list(...)
-    if ( is.list(L[[1]]) && length(L)==1 )
+    if ( is.list(L[[1]]) && length(L)==1 ){
         L <- L[[1]]
-    
+        print('hi')
+        print(length(L))
+    }
+
     # retrieve model names from function call
     mnames <- match.call()
+
     mnames <- as.character(mnames)[2:(length(L)+1)]
+    print(mnames)
     
+    # call xse and xcoef only ONCE
+    coef.list <- lapply(L, function(l) xcoef( l , pars))
+    se.list <-   lapply(L, function(l)  xse( l , pars))
+
+
     # count number of unique parameters
-    param.names <- {}
-    for ( i in 1:length(L) ) {
-        c.names <- names( xcoef( L[[i]] ) )
-        param.names <- unique( c( param.names , c.names ) )
-    }
+    param.names <- unique(c(sapply(coef.list, names)))
+
+    ##    for ( i in 1:length(L) ) {
+    ##        c.names <- names( coef.list[[i]] )
+    ##        param.names <- unique( c( param.names , c.names ) )
+    ##    }
+    
     # columns for standard errors
     if ( se==TRUE && se.inside==FALSE ) {
         for ( i in 1:length(L) ) {
-            kse.names <- paste( names( xcoef( L[[i]] ) ) , ".se" , sep="" )
+            kse.names <- paste( names( coef.list[[i]] ) , ".se" , sep="" )
             param.names <- unique( c( param.names , kse.names ) )
         }
     }
-    
+
     # make empty table
     nk <- length(param.names)
     d <- matrix( NA , ncol=nk )
     d <- data.frame(d)
     colnames(d) <- c( param.names )
     dse <- d
-    
+
     # loop over models and insert values
     for ( i in 1:length(L) ) {
-        klist <- xcoef( L[[i]] )
-        selist <- xse( L[[i]] )
+        klist <- coef.list[[i]]
+        selist <- se.list[[i]]
         for ( j in 1:length(klist) ) {
-            d[i,][ names( klist[j] ) ] <- as.numeric( round( klist[j] , digits ) )
-            dse[i,][ names( klist[j] ) ] <- as.numeric( selist[j] )
+            ## changed both from d[i , ] [names(klist[j])] which produces error
+            d[i, names( klist[j] ) ] <- as.numeric( round( klist[j] , digits ) ) 
+            dse[i, names( klist[j] ) ] <- as.numeric( selist[j] )
         }
     }
     # insert standard errors
     if ( se==TRUE ) {
         for ( i in 1:length(L) ) {
-            kse <- xse( L[[i]] )
-            names(kse) <- names( xcoef( L[[i]] ) )
+            kse <- se.list[[i]]
+            names(kse) <- names( coef.list[[i]] )
             for ( j in 1:length(kse) ) {
                 if ( se.inside==FALSE )
                     # own column
