@@ -45,6 +45,7 @@ map( flist , start , data , method="BFGS" , hessian=TRUE , debug=FALSE , ... )
 \author{Richard McElreath}
 \seealso{\code{\link{optim}}}
 \examples{
+library(rethinking)
 data(cars)
 flist <- alist(
     dist ~ dnorm( mean=mu , sd=sigma ) ,

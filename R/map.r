@@ -310,7 +310,7 @@ map <- function( flist , start , data , method="BFGS" , hessian=TRUE , debug=FAL
 
 # EXAMPLES
 if ( FALSE ) {
-
+library(rethinking)
 data(cars)
 
 flist0 <- list(
