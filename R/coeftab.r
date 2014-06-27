@@ -14,6 +14,7 @@ coeftab.show <- function( object ) {
 }
 setMethod( "show" , "coeftab" , function(object) coeftab.show(object) )
 
+
 coeftab.plot <- function( x , y , pars , col.ci="black" , by.model=FALSE , prob=0.95, xlim=NULL, ... ) {
     x.orig <- x
     xse <- x@se
