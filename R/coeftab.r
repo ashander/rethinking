@@ -14,7 +14,7 @@ coeftab.show <- function( object ) {
 }
 setMethod( "show" , "coeftab" , function(object) coeftab.show(object) )
 
-coeftab.plot <- function( x , y , pars , col.ci="black" , by.model=FALSE , prob=0.95 , ... ) {
+coeftab.plot <- function( x , y , pars , col.ci="black" , by.model=FALSE , prob=0.95, xlim=FALSE, ... ) {
     x.orig <- x
     xse <- x@se
     x <- x@coefs
@@ -39,8 +39,10 @@ coeftab.plot <- function( x , y , pars , col.ci="black" , by.model=FALSE , prob=
         }
     }
 
-    llim <- min(left,na.rm=TRUE)
-    rlim <- max(right,na.rm=TRUE)
+    if(!xlim){
+        llim <- min(left,na.rm=TRUE)
+        rlim <- max(right,na.rm=TRUE)
+    }
     dotchart( x , xlab="Estimate" , xlim=c(llim,rlim) , ... )
     
     for ( k in 1:nrow(x) ) {
@@ -71,9 +73,15 @@ coeftab <- function( ... , se=FALSE , se.inside=FALSE , nobs=TRUE , digits=2 , w
     # retrieve list of models
 
     # ISSUE - need to passing several models as list and manage row.name
-    # ISSUE - depending on load order of rethinking, rstan ( and maybe interacting with devtools) the call through to xcoef ends up calling summary.default instaed of the method for stanfit
+    # ISSUE - more specifically: when loaded through devtools load_all,
+    ##        the call through to xcoef ends up calling summary.default
+    ##        instaed of the method for stanfit, when loaded through
+    ##        > library(rstan)
+    ##        > library(rethinking)
+    ##        things seem to work OK.
+    
     L <- list(...)
-    #print(L)
+
     if ( is.list(L[[1]]) && length(L)==1 ){
         L <- L[[1]]
         mnames <- names(L)

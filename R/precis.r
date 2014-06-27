@@ -111,8 +111,8 @@ xcoef <- function( model, pars) {
         result <- apply( model , 2 , mean )
     }
     if ( the.method=="stanfit" ) {
-        print(class(model))
-        print(summary(model))
+        #print(class(model))
+        #print(summary(model))
 
         result <- summary( model )[['summary']][pars , 1] ## works?!?
         names(result) <- pars
