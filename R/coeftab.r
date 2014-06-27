@@ -73,17 +73,17 @@ coeftab <- function( ... , se=FALSE , se.inside=FALSE , nobs=TRUE , digits=2 , w
     # ISSUE - need to passing several models as list and manage row.name
     # ISSUE - depending on load order of rethinking, rstan ( and maybe interacting with devtools) the call through to xcoef ends up calling summary.default instaed of the method for stanfit
     L <- list(...)
+    #print(L)
     if ( is.list(L[[1]]) && length(L)==1 ){
         L <- L[[1]]
-        print('hi')
-        print(length(L))
+        mnames <- names(L)
+    } else if (is.list(L[[1]]) && length(L) > 1){
+        ## retrieve model names from function call when not a list of models
+        mnames <- match.call()
+        mnames <- as.character(mnames)[2:(length(L)+1)]
     }
 
-    # retrieve model names from function call
-    mnames <- match.call()
 
-    mnames <- as.character(mnames)[2:(length(L)+1)]
-    print(mnames)
     
     # call xse and xcoef only ONCE
     coef.list <- lapply(L, function(l) xcoef( l , pars))
