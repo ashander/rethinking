@@ -14,7 +14,7 @@ coeftab.show <- function( object ) {
 }
 setMethod( "show" , "coeftab" , function(object) coeftab.show(object) )
 
-coeftab.plot <- function( x , y , pars , col.ci="black" , by.model=FALSE , prob=0.95, xlim=FALSE, ... ) {
+coeftab.plot <- function( x , y , pars , col.ci="black" , by.model=FALSE , prob=0.95, xlim=NULL, ... ) {
     x.orig <- x
     xse <- x@se
     x <- x@coefs
@@ -39,9 +39,13 @@ coeftab.plot <- function( x , y , pars , col.ci="black" , by.model=FALSE , prob=
         }
     }
 
-    if(!xlim){
+    if(length(xlim) < 2){
         llim <- min(left,na.rm=TRUE)
         rlim <- max(right,na.rm=TRUE)
+        xlim <- c(llim,rlim)
+    } else {
+        llim <- xlim[1]
+        rlim <- xlim[2]
     }
     dotchart( x , xlab="Estimate" , xlim=c(llim,rlim) , ... )
     
